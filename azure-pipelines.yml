@@ -1,0 +1,38 @@
+pool:
+
+  name: MyPrivateAgent
+
+
+steps:
+
+- task: PowerShell@2
+
+  displayName: QueueBuildForPipelineA
+
+  inputs:
+    targetType : inline
+    Script: |
+     $body = '
+     { 
+             "definition": {
+                 "id": DefinitionIdHere
+             } 
+     }'
+
+     $bodyJson=$body | ConvertFrom-Json
+     Write-Output $bodyJson
+     $bodyString=$bodyJson | ConvertTo-Json -Depth 100
+     Write-Output $bodyString
+     $user="test"
+     $token="PAT"
+     $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $user,$token)))
+
+     $Uri = "https://dev.azure.com/learnyst/MobileAppBuilder/_apis/build/builds?api-version=5.0"
+     $buildresponse = Invoke-RestMethod -Method Post -UseDefaultCredentials -ContentType application/json -Uri $Uri -Body $bodyString -Headers @{Authorization=("Basic {0}" -f $base64AuthInfo)}
+
+  condition: and(always(), eq(variables['TriggerPipelineA'], 'True'))
+
+
+- task: PowerShell@2
+
+  displayName: QueueBuildForPipelineB
